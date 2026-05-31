@@ -22,7 +22,9 @@ module.exports = async function handler(req, res) {
     });
     const { access_token } = await tokenRes.json();
     if (!access_token) return res.status(400).json({ error: "no token" });
-    const r = await fetch(`https://api.digikey.com/products/v4/search/${encodeURIComponent(pn)}/productdetails`, {
+
+    // Try direct product lookup first
+    const r1 = await fetch(`https://api.digikey.com/products/v4/search/${encodeURIComponent(pn)}/productdetails`, {
       headers: {
         "Authorization": `Bearer ${access_token}`,
         "X-DIGIKEY-Client-Id": DK_CLIENT_ID,
@@ -31,7 +33,25 @@ module.exports = async function handler(req, res) {
         "X-DIGIKEY-Locale-Currency": "USD"
       }
     });
-    return res.status(200).json(await r.json());
+    const d1 = await r1.json();
+    if (d1.Product) return res.status(200).json(d1);
+
+    // Fallback: keyword search
+    const r2 = await fetch(`https://api.digikey.com/products/v4/search/keyword`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${access_token}`,
+        "X-DIGIKEY-Client-Id": DK_CLIENT_ID,
+        "X-DIGIKEY-Locale-Site": "US",
+        "X-DIGIKEY-Locale-Language": "en",
+        "X-DIGIKEY-Locale-Currency": "USD",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ Keywords: pn, Limit: 1, Offset: 0 })
+    });
+    const d2 = await r2.json();
+    const prod = d2.Products?.[0] || null;
+    return res.status(200).json({ Product: prod, _raw: d2 });
   }
 
   if (action === "mouser") {
