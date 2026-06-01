@@ -2,8 +2,6 @@ const DK_CLIENT_ID = "DfhRwX3gsNRVArj6UFbGbJBJlQiUXOFAaGklIKZlr3K25OJ6";
 const DK_CLIENT_SECRET = "I9SeWG1GGO5GQIUeVRuenD7piiKE0qOvdMAvktpHH3RJTlGKVgWAA3AH77645P9O";
 const MOUSER_KEY = "57a344f1-63db-4991-a2d0-e619f3649e01";
 
-export const config = { api: { bodyParser: true } };
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -34,12 +32,11 @@ export default async function handler(req, res) {
     return res.status(200).json(await r.json());
   }
 
-  if (action === "mouser") {
-    const body = req.body;
+  if (action === "mouser" && pn) {
     const r = await fetch(`https://api.mouser.com/api/v1/search/partnumber?apiKey=${MOUSER_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ SearchByPartRequest: { mouserPartNumber: pn, partSearchOptions: "string" } })
     });
     return res.status(200).json(await r.json());
   }
