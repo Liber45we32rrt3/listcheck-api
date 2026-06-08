@@ -1,6 +1,9 @@
-const DK_CLIENT_ID = "DfhRwX3gsNRVArj6UFbGbJBJlQiUXOFAaGklIKZlr3K25OJ6";
-const DK_CLIENT_SECRET = "I9SeWG1GGO5GQIUeVRuenD7piiKE0qOvdMAvktpHH3RJTlGKVgWAA3AH77645P9O";
-const MOUSER_KEY = "57a344f1-63db-4991-a2d0-e619f3649e01";
+// Las API keys se leen desde Variables de Entorno de Vercel.
+// NO se escriben en el código. En Vercel: Settings > Environment Variables
+// y creás: DK_CLIENT_ID, DK_CLIENT_SECRET, MOUSER_KEY
+const DK_CLIENT_ID = process.env.DK_CLIENT_ID;
+const DK_CLIENT_SECRET = process.env.DK_CLIENT_SECRET;
+const MOUSER_KEY = process.env.MOUSER_KEY;
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -12,6 +15,7 @@ export default async function handler(req, res) {
 
   if (action === "health") return res.status(200).json({ status: "ok" });
 
+  // ── DIGIKEY ──────────────────────────────────────────
   if (action === "digikey" && pn) {
     const tokenRes = await fetch("https://api.digikey.com/v1/oauth2/token", {
       method: "POST",
@@ -32,13 +36,21 @@ export default async function handler(req, res) {
     return res.status(200).json(await r.json());
   }
 
+  // ── MOUSER ───────────────────────────────────────────
   if (action === "mouser" && pn) {
     const r = await fetch(`https://api.mouser.com/api/v1/search/partnumber?apiKey=${MOUSER_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ SearchByPartRequest: { mouserPartNumber: pn, partSearchOptions: "string" } })
+      body: JSON.stringify({
+        SearchByPartRequest: {
+          mouserPartNumber: pn,
+          partSearchOptions: "None"
+        }
+      })
     });
-    return res.status(200).json(await r.json());
+    const data = await r.json();
+    // Devuelve el error de Mouser tal cual para poder diagnosticar
+    return res.status(200).json(data);
   }
 
   return res.status(400).json({ error: "invalid action" });
